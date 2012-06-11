@@ -200,7 +200,7 @@ var cssSandpaper = new function(){
 				var sels = rule.selector.split(',');
 				if (property == 'filter') {
 					for (var j in sels) {
-						textShadowForMSIE.ieShadowSettings.push({
+						window.textShadowForMSIE.ieShadowSettings.push({
 							sel: sels[j],
 							shadow: rule.value
 						});
@@ -213,7 +213,10 @@ var cssSandpaper = new function(){
 		            }
 				}
 			}
-		textShadowForMSIE.init()
+
+        if (property == 'filter') {
+    		window.textShadowForMSIE.init();
+        }
 		
 	}
     
@@ -409,10 +412,15 @@ var cssSandpaper = new function(){
         
         for (var i in backgroundRules) {
             var rule = backgroundRules[i];
-            var nodes = document.querySelectorAll(rule.selector);
-            for (var j = 0; j < nodes.length; j++) {
-                me.setGradient(nodes[j], rule.value)
-            }
+
+              // cjm -- ignore selectors like '50%' which aren't exactly valid DOM elements, but
+              // are specified in gradients in _base.css
+              if ( rule.selector.indexOf("%") === -1 ) {
+                var nodes = document.querySelectorAll(rule.selector);
+                for (var j = 0; j < nodes.length; j++) {
+                    me.setGradient(nodes[j], rule.value)
+                }
+            } 
         }
     }
     
@@ -543,7 +551,7 @@ var cssSandpaper = new function(){
         styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
         
         for (var i = 0; i < styleNodes.length; i++) {
-            if (!CSSHelpers.isMemberOfClass(styleNodes[i], 'cssSandpaper-noIndex')) {
+            if (!CSSHelpers.isMemberOfClass(styleNodes[i], 'cssSandpaper-noIndex') && !CSSHelpers.isDataUrl(styleNodes[i])) {
                 styleSheets.push(getStyleSheet(styleNodes[i]))
             }
         }
@@ -1780,7 +1788,6 @@ XMLHelpers = new function(){
         }
         
         req.open(httpMethod, url, isAsync);
-        
         //Fixes IE Caching problem
         req.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT");
         req.send(data);
@@ -1845,6 +1852,7 @@ CSSHelpers = new function(){
             obj.className += " " + className;
         }
     }
+
     
     /**
      * Make an HTML object *not* be a member of a certain class.
@@ -1870,6 +1878,14 @@ CSSHelpers = new function(){
         
         
     }
+
+    /**
+     * determine if the URL is using the data: protocol
+     */
+    me.isDataUrl = function(obj) {
+      return obj.nodeName.toLowerCase() == "link" && obj.href.indexOf("data:") == 0;
+    }
+
 	
 	function getClassReString(className) {
 		return '\\s'+className+'\\s|^' + className + '\\s|\\s' + className + '$|' + '^' + className +'$';
